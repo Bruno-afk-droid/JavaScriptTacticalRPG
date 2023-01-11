@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css?family=Just+Another+Hand&display=swap');
+.title {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  position: fixed;
+  align-items: center;
+  justify-content: center;
+}
+canvas{
+  font-smooth: never;
+  -webkit-font-smoothing : none;
+}
+.center {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  position: fixed;
+  align-items: center;
+  justify-content: center;
+}
+button {
+  background-color: #4CAF50; 
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+button:hover {
+  background-color: darkgreen; 
+}
+.outer { 
+  position: relative; 
+} 
+.inner { 
+  position: absolute; 
+  top: 10px; 
+}

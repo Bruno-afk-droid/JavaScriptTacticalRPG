@@ -4,12 +4,35 @@
    <title>webGame</title>
    <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen" />
 </head>
+
   <body>
-    
+    <script>
+      function enforceMinMax(el){
+        try {
+
+              //check of ingevoerde waarde is ingevuld en een geldig getal is
+              if(el.value == "")el.value=el.min;
+
+              if(Number.isInteger(parseInt(el.value))){            
+                if(parseInt(el.value) < parseInt(el.min)){
+                  el.value = el.min;
+                }else
+                if(parseInt(el.value) > parseInt(el.max)){
+                  el.value = el.max;
+                }
+              }else {
+                alert("Vul een geheel getal in tussen 10 en 100");
+              }
+          }
+          catch (err){
+              alert(err.value);
+          }
+      }
+    </script>
     <div class="center">
       <h1 class="inner">Config</h1>
     <div class="menu">
-      <h3 class="menu-item">size: <input type="number" min="10" max="100" step="1" value="15" id="fsize" name="fname">  Tiles</h3>
+      <h3 class="menu-item">Size: <input type="number" min="10" max="100" step="1" value="15" onkeyup=enforceMinMax(this) id="fsize" name="fname">  tiles</h3>
       <button onclick="window.location.href='game.html?TerrainSize='+document.getElementById('fsize').value;">Continue</button>
       <button onclick="window.location.href='index.html';">Back</button>
     </div></div>

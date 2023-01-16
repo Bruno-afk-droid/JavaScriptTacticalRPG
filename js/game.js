@@ -1,28 +1,29 @@
-
+//Het scherm opbouwen
 c.imageSmoothingEnabled = false;
 
+//Camera object aanmaken
 camera = new Camera({x:-canvas.width,y:-canvas.height, width:canvas.width*2, height:canvas.height*2});
 
 c.fillRect(-canvas.width,-canvas.height, canvas.width*2, canvas.height*2);
 
+//anders objecten die gebruikt worden
 let Objects = [];
-
 let keys = {enter: false,right: false,down: false, left:false, up:false};
-
 let Terrain = new Array();
 let TerrainUI = new Array();
 let TerrainStart ={x:0,y:0,z:0};
-
 let Players = new Array();
 
+//Grote van de tiles worden hier ingesteld
 w = 47;
 h = 23;
 let st = {x:0,y:0,z:0};
 
+//Het terrein opbouwen obv door speler ingevoerde configuratie
 Lx = gup('TerrainSize');
 st.x=Math.max(st.x,Lx);
 for (let x = 0; x < Lx; x++) {
-    Terrain[x] = new Array();
+    Terrain[x] = new Array();       
     Ly = gup('TerrainSize');
     st.y=Math.max(st.y,Ly-1);
     for (let y = 0; y < Ly; y++) {
@@ -37,8 +38,11 @@ for (let x = 0; x < Lx; x++) {
 }Terrain.push(new Array());
 TerrainStart={x:-((w*st.x)+(w*st.y))/2,y:-(-(h*st.x)+(h*st.y))/2,z:0};
 
+//spawn het player object op een random tile
 spawnPlayer(GetRandomTile());
 
+//initialiseert plan fase van het spel
+setUpPlanPhase();
 
 
 //Terrain.forEach(function(x){x.forEach(function(y){y.forEach(function(z){ConnectTile(z.Gridpos.x,z.Gridpos.y,z.Gridpos.z,z)})})});
@@ -210,7 +214,7 @@ function spawnPlayer(Tile){
     while(Tile.StackedUnder!=null)Tile=Tile.StackedUnder;
     player = new PlayerBase({x:Tile.Gridpos.x,y:Tile.Gridpos.y,z:Tile.Gridpos.z+1},Terrain)
     Players.push(player);
-    camera.selectedItem.setPosition(structuredClone(Tile.Gridpos));
+    //camera.selectedItem.setPosition(structuredClone(Tile.Gridpos));
     Terrain[Tile.Gridpos.x][Tile.Gridpos.y][Tile.Gridpos.z+1]=player;
 }
 function tick(){
@@ -224,8 +228,8 @@ function tick(){
             camera.zoomIn+=0.02;
         }else if(camera.zoomIn>1.0) camera.zoomIn-=0.02;
         
-        for (let i = 0; i < Objects.length; i++) {
-            Objects[i].tick();
+        for (let i = 0; i < Players.length; i++) {
+            Players[i].tick();
         }
     }
     camera.tick();
@@ -245,18 +249,17 @@ function renderTerrain(){
     //Terrain.reduceRight((_,x) => x.forEach(function(y){y.forEach(function(z){z?.draw()})}));
     //Terrain.forEach(function(x){x.forEach(function(y){y.forEach(function(z){z?.draw()})})});
 }
-function renderPlayers(){
-    for (const player of Players) {
-        player.draw();
-    }
-}
 function animate(){
     //window.requestAnimationFrame(animate);
     if(renderfreeze>0){renderfreeze--;return;}
     c.fillStyle = 'cyan';  
     c.fillRect(-canvas.width,-canvas.height, canvas.width*2, canvas.height*2);
+    try {
+        renderTerrain();
+    } catch (error) {
+        console.log("RENDERING-ERROR");
+    }
     
-    renderTerrain();
 }
 resizeCanvas();
 
@@ -268,8 +271,6 @@ setTimeout(() => {
     //camera.view.y=-canvas.height/2; 
     tick();
     animate();
-    
-    camera.highLightArea(Players[0].MovementArea);
 }, 1000/60);
 
 function getCursorPosition(event){

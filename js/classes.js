@@ -21,6 +21,27 @@ function PauseGame(){
 function closeHelpMenu(){
     this.HelpMenu.style.visibility='hidden';
 }
+function StartFightPhase(){
+    if(GamePhase!='plan')return
+    for (const player of Players) {
+        PlayersInAction++;
+        player.setMovement();
+        player.MovementPath.hidden=true;
+        player.ActionCircle.hidden=true;
+        camera.deHighLightArea(player.MovementArea);
+    }
+    GamePhase='action';
+}
+function setUpPlanPhase(){ 
+    for (const player of Players) {
+        player.MovementPath.hidden=false;
+        player.ActionCircle.hidden=false;
+        camera.highLightArea(player.MovementArea);
+    }
+    GamePhase='plan';
+}
+//De camera class regelt het perspectief aan de hand toesten die de gebruiker intoetst.
+//Daarna wordt het scherm gerenderd met dat perspectief.
 class Camera { 
     constructor(view={x:0,y:0,width:canvas.width,height:canvas.height}){
         this.view=view;
@@ -33,10 +54,9 @@ class Camera {
         //<iframe src='help.html' title='test'></iframe>
         this.HelpMenu=createFrame(0,0,500,600);
         this.HelpMenu.style.visibility='hidden';
-        this.selectedItem=new MovementAction({x:0,y:0,z:0},'MovementAction','SelectedMovementAction','SelectedMovementAction',null,94,48);
-        this.UIItems.push(this.selectedItem);
+        this.selectedItem=null;
         this.UIItems.push(new Button({x:0,y:0,z:0},'Button','ButtonSelected','ButtonSelected',new Function("this.hidden=!Paused;PauseGame();"),90,64,'Pause','RIGHT-UP'));
-        
+        this.UIItems.push(new Button({x:0,y:0,z:0},'Button','ButtonSelected','ButtonSelected',StartFightPhase,90,64,'Start','RIGHT-DOWN'));
 
         this.HelpMenuCancelButton = new Button({x:-79*1.5,y:324,z:Infinity},'PFButton','PFButtonSelected','PFButtonSelected',new Function("camera.HelpMenu.style.visibility='hidden';camera.HelpMenuCancelButton.hidden=true;"),156*1.5,24*1.5,'Continue',"CENTER"),
         this.PauseMenu=[
@@ -78,6 +98,21 @@ class Camera {
             }
         }
     }
+    deHighLightArea(area){
+        for (let tile of GridTile.GetAreaInRect(Terrain,GridTile.GetAreaBounds(this.selectebleTiles))) {
+            for(let x = 0; x<area.length;x++)
+            for(let y = 0; y<area[x].length; y++)
+            for(let z = 0; z<area[x][y].length;z++){
+                let currentTile = GetTile(x,y,z,area);
+                if(!currentTile
+                    ||tile.StackedOn?.S==tile
+                    ||tile.Gridpos.z<=z)continue;
+                if(tile.isColliding(currentTile)){
+                    tile.RemoveTransparent();
+                } 
+            }
+        }
+    }
     tick(){
         let cursor={
             x:(-0.5+CursorPosition.x/(this.view.width))/this.zoomIn+0.5,
@@ -97,7 +132,7 @@ class Camera {
                 }  
             }
             for (const item of TerrainUI) {
-                this.renderingTiles=this.renderingTiles.concat(item.Path);
+                this.renderingTiles.push(item);
             }
             for (const item of this.UIItems) {
                 this.renderingTiles.push(item);
@@ -136,22 +171,14 @@ class Camera {
     }
     renderView(Terrain){
         let rel = {x:this.view.x+(this.view.width/2),y:this.view.y+(this.view.height/2),z:this.zoomIn};
-      
         for(const render of this.renderingTiles){
             if(!Paused||this.PauseMenu.includes(render))
             render.draw(rel);
         }
-        
-        /*
-        for (const UIelement of TerrainUI) {
-            UIelement.draw(rel);
-        }
-        for (const UIItem of this.UIItems) {
-            UIItem.draw(rel);
-        }*/
-        //console.log(closesed);
     }
 }
+//De sprite class wordt gebruikt om alle images te renderen in het scherm
+//Het is het parent object van alle object die zichtbaar zijn in het scherm
 class Sprite {
     constructor(position, image,width=48,height=96){
         this.position=position;
@@ -166,10 +193,15 @@ class Sprite {
     
     draw(pos={x:0,y:0,z:1}){
         if(this.hidden)return;
-        c.drawImage(this.image, 
-            (this.position.x-pos.x)*pos.z, 
-            (this.position.y-pos.y-(this.position.z))*pos.z,
-            this.width*pos.z,this.height*pos.z);
+        try {
+            c.drawImage(this.image, 
+                (this.position.x-pos.x)*pos.z, 
+                (this.position.y-pos.y-(this.position.z))*pos.z,
+                this.width*pos.z,this.height*pos.z);
+        } catch (error) {
+            console.log("(x:"+(this.position.x-pos.x)*pos.z+" y:"+(this.position.y-pos.y-(this.position.z))*pos.z+" z:"+(this.position.y-pos.y-(this.position.z))*pos.z+") "+error);   
+        }    
+
     }
 
     ContainsPosition(pos,x=0,y=0){
@@ -200,6 +232,7 @@ class Sprite {
         this.draw();
     }
 }
+//UIItem geeft het sprite object extra UI  mogelijkheden
 class UIItem extends Sprite { 
     constructor(pos={x:0,y:0,z:999},image,width,height,depth=0,relative=""){
         super(pos,image,width,height);
@@ -244,6 +277,7 @@ class UIItem extends Sprite {
         super.draw(this.relative!=""? this.relativePos : pos);
     }
 }
+//UIBox is een UIItem wat UI image kan laten zien zonder functionaliteit.
 class UIBox extends UIItem {
     constructor(pos={x:0,y:0,z:999},image,width,height,depth=Infinity,relative=""){
         super(pos,image,width,height,depth);
@@ -253,6 +287,7 @@ class UIBox extends UIItem {
         super.draw(this.relative? this.relativePos : pos);
     }
 }
+//Button is een UIItem die een doorgegeven functie doorgeeft wanneer het getriggerd wordt.
 class Button extends UIItem{
     constructor(pos={x:0,y:0,z:0},image,selectImage,triggerImage,triggerEvent,width,height,text="",relative=""){
         super(pos,image,width,height,Infinity,relative);
@@ -289,6 +324,7 @@ class Button extends UIItem{
         c.fillText(this.text,this.position.x-p.x+this.width/2-(this.text.length*(this.height/8)),this.position.y-p.y+(this.height*0.65));
     }
 } 
+//MovementAction is een UIItem die de speler gebruikt om de acties van de speler in te stellen
 class MovementAction extends UIItem{
     constructor(pos={x:0,y:0,z:0},image,selectImage,triggerImage,triggerEvent,width,height){
         super(pos,image,width,height);
@@ -301,7 +337,7 @@ class MovementAction extends UIItem{
         this.Gridpos={x:0,y:0,z:0};
         this.Cursor={x:0,y:0,z:0};
     }
-    setPosition(pos){
+    setPosition(pos={x:0,y:0,z:0}){
         this.position=GridTile.GetTileCoordinates(pos.x,pos.y,pos.z);
         this.Gridpos = structuredClone(pos);
     }
@@ -348,6 +384,7 @@ class MovementAction extends UIItem{
         }
     }
 }
+//GridTile is een sprite object dat wordt gebruikt als een tegel in het terrein.
 class GridTile extends Sprite{
     constructor(pos,image='Tile'){
         super(GridTile.GetTileCoordinates(pos.x,pos.y,pos.z),image);
@@ -453,7 +490,8 @@ class GridTile extends Sprite{
                     !t1||t1.StackedUnder||
                     !t2||t2.StackedUnder
                     )continue;
-                }
+                    current.SpreadSelect(spread-1.5,select);
+                }else 
                 current.SpreadSelect(spread-1,select);
             }
 
@@ -508,10 +546,11 @@ class GridTile extends Sprite{
         this.RightWall.image=Images['WallRightT'];
     } 
     RemoveTransparent(){
+        this.transparent=false;
         this.image=Images['Tile'];
-        //if(this.LeftWall)
-        this.LeftWall=Images['WallLeft'];
-        //if(this.RightWall)
+        if(!this.Adjacent.W)
+        this.LeftWall.image=Images['WallLeft'];
+        if(!this.Adjacent.S)
         this.RightWall.image=Images['WallRight'];
     }
     HighLight(){
@@ -528,6 +567,7 @@ class GridTile extends Sprite{
         this.RightWall.draw(pos);
     }
 }
+//PlayerBase is een sprite object dat wordt gebruikt door de speler om basis acties uit te voeren
 class PlayerBase extends Sprite{
     constructor(Gridpos,Terrain){
         super({x:0,y:0,z:0},'Player',94,94);
@@ -535,8 +575,17 @@ class PlayerBase extends Sprite{
         this.Terrain=Terrain;
         this.setPossition(Gridpos);
         console.log(this.Gridpos);
-        this.MovementArea=this.GenerateMovementArea(10);
+        this.selectedAction='positioning';
+        this.ActionCircle=new MovementAction({x:0,y:0,z:0},'MovementAction','SelectedMovementAction','MPSP',null,94,48);
+        this.ActionCircle.setPosition({x:this.Gridpos.x,y:this.Gridpos.y,z:this.Gridpos.z-1});
+        camera.UIItems.push(this.ActionCircle);
+        this.MovementDistance=6;
+        this.MovementArea=this.GenerateMovementArea(this.MovementDistance);
         this.MovementPath=new MovementPath(GetTile(Gridpos.x,Gridpos.y,Gridpos.z-1,this.MovementArea),GetRandomTile(this.MovementArea),this.MovementArea);
+        this.MovementQueue=Array();
+        this.MovementSpeed=2;
+        this.MovementProgression=60;
+        this.depth=this.position.z;
         TerrainUI.push(this.MovementPath);
     }
     setPossition(pos={x:0,y:0,z:0}){
@@ -547,24 +596,77 @@ class PlayerBase extends Sprite{
         this.position={x:(w*pos.x)+(w*pos.y),y:-(h*pos.x)+(h*pos.y),z:pos.z*71-23};
         this.depth=this.position.z+this.height;
     }
+    setMovement(route=this.MovementPath){
+        route.current=route.Path[route.Path.length-1];
+        for (let i = route.Path.length-2; i >= 0; i--) {
+            const e = route.Path[i];
+            this.MovementQueue.push({
+                x:e.Gridpos.x-e.previous.Gridpos.x,
+                y:e.Gridpos.y-e.previous.Gridpos.y,
+                z:e.Gridpos.z-e.previous.Gridpos.z
+            });
+        }
+    }
+    MoveWithGridPos(pos={x:0,y:0,z:0}){
+        this.Gridpos.x+=Math.sign(pos.x);
+        this.Gridpos.y+=Math.sign(pos.y);
+        this.Gridpos.z+=Math.sign(pos.z);
+        this.position=GridTile.GetTileCoordinates(this.Gridpos.x,this.Gridpos.y,this.Gridpos.z);
+        this.position.z-=23;
+    }
     MovePosition(vel){
         this.position.x+=vel.x;
         this.position.y+=vel.y;
         this.position.z+=vel.z;
     }
-    /*updateTile(grid={x:0,y:0,z:0}){
-        this.MovePosition(grid);
-    }*/
+    tick(){
+        if(GamePhase=='action'&&this.MovementQueue.length>0){
+            let mp=structuredClone(this.MovementQueue[0]); 
+            let mv=this.MovementQueue[0];
+            if(mv.x.toFixed(1)!=0)mv.x-=0.1*Math.sign(mv.x);else mv.x=0;
+            if(mv.y.toFixed(1)!=0)mv.y-=0.1*Math.sign(mv.y);else mv.y=0;
+            if(mv.z.toFixed(1)!=0)mv.z-=0.1*Math.sign(mv.z);else mv.z=0;
+            if(mv.x==0&&mv.y==0&&mv.z==0){
+                this.MovementQueue.shift();
+                this.MoveWithGridPos(mp);
+                if(this.MovementQueue.length==0)return;
+            }
+            this.MovePosition(GridTile.GetTileCoordinates(
+                0.1*Math.sign(mv.x),
+                0.1*Math.sign(mv.y),
+                0.1*Math.sign(mv.z)
+            ));
+        }else{
+            if(GamePhase!='action')return;
+            //this.MovementPath.start=GetTile(this.Gridpos.x,this.Gridpos.y,this.Gridpos.z,this.movementArea);
+            this.MovementArea=this.GenerateMovementArea(this.MovementDistance);
+            this.MovementPath.Regenerate(
+                GetTile(this.Gridpos.x,this.Gridpos.y,this.Gridpos.z-1,this.movementArea),
+                GetRandomTile(this.MovementArea),
+                this.MovementArea
+            );
+            this.ActionCircle.setPosition({x:this.Gridpos.x,y:this.Gridpos.y,z:this.Gridpos.z-1});
+            if(GamePhase=='action'&&--PlayersInAction<=0)setUpPlanPhase();
+        }
+    }
     HighLightPlayer(){
 
     }
     GenerateMovementArea(movement){
         let movementArea = new Array();
-        
+        if(this.MovementArea)
+        for (const x of this.MovementArea)
+        for (const y of x)
+        for (const tile of y) {
+            let c=GetTile(tile.Gridpos.x,tile.Gridpos.y,tile.Gridpos.z);
+            if(!c)continue;
+            c.spread=0;
+            c.DeselectTile();
+        }
         let Area=GetTile(this.Gridpos.x,this.Gridpos.y,this.Gridpos.z-1).SpreadSelect(movement);
         
         camera.selectebleTiles=Area;
-        console.log(Area);
+        //console.log(Area);
 
 
         for (const t of Area) {
@@ -589,15 +691,31 @@ class PlayerBase extends Sprite{
 
     }
 }
+//MovementPath is een object wordt gebruikt om een pad te genereren tussen twee tiles
 class MovementPath{
     constructor(start,end,movementArea){
         this.movementArea=movementArea;
         this.Path=new Array();
+
         this.start=start;
         this.end=end;
         this.GeneratePath();
+        this.current=this.Path[this.Path.length-1];
+        this.hidden=false;
     }
-    
+    Regenerate(start,end,movementArea){
+        this.movementArea=movementArea;
+        this.Path=new Array();
+
+        this.start=start;
+        this.end=end;
+        this.GeneratePath();
+        this.current=this.Path[this.Path.length-1];
+    }
+    getNextPathSegment(){
+        if(this.current)this.current=this.current.after;
+        return this.current;
+    }
     HighlightMoventArea(){
         this.movementArea.forEach(function(x){
             x.forEach(function(y){
@@ -609,7 +727,6 @@ class MovementPath{
     resetMovementArea(){
         LoopTileGrid(this.movementArea,'SpreadSelect');
     }
-
     GeneratePath(start,end,Area=this.movementArea){
         this.resetMovementArea();
         var openSet = [];
@@ -670,6 +787,7 @@ class MovementPath{
                         neighbor.h = heuristic(neighbor,this.end);
                         neighbor.f = neighbor.g + neighbor.h;
                         neighbor.previous = current;
+                        current.after=neighbor;
                     }
                 }
             };
@@ -677,36 +795,17 @@ class MovementPath{
         }
         console.log("Failed");
     }
-    createLookout(O,dir=0){
-        let result ={F:null,L:null,R:null,B:null}; 
-        result.F=O[dir];
-        if(dir-1>=0){
-            result.L=O[dir-1];
-        }else{
-            result.L=O[3];
-        }
-        if(dir+1<4){
-            result.R=O[dir+1];
-        }else{
-            result.R=O[0];
-        }
-        if(dir-2>=0){
-            result.B=O[dir-1];
-        }else{
-            result.B=O[-1-(dir-2)]
-        }
-        return result;
-    }
-
     draw(pos={x:0,y:0,z:0}){
+        if(this.hidden)return;
         for (let i = 0; i < this.Path.length; i++) {
             this.Path[i].draw(pos);       
         }
     }
 }
+//PathSegment is object dat gebruikt door de MovementPath object. Dit is deel van het pad.
 class PathSegment extends Sprite{
-    constructor(pos,dir='end'){
-        super(GridTile.GetTileCoordinates(pos.x,pos.y,pos.z),'SelectedTile',94,46);
+    constructor(pos,dir=''){
+        super(GridTile.GetTileCoordinates(pos.x,pos.y,pos.z),'MPSP',94,46);
          this.Gridpos=pos;
          this.dir=dir;
          this.f=0;
@@ -715,7 +814,6 @@ class PathSegment extends Sprite{
          this.Adjacent={N:null,E:null,S:null,W:null,NE:null,SE:null,SW:null,NW:null};
          this.previous=null;
          this.after=null;
-         
     } 
     MovePosition(vel){
         this.position.x+=vel.x;
@@ -745,8 +843,9 @@ class PathSegment extends Sprite{
         //GetTile(this.Gridpos.x-1,this.Gridpos.y+1,this.Gridpos.z+1)?.MakeTransparent();
 
 
-
+        //if(!this.image||this.dir=='start')this.image=Images['MPSP'];
         if(!this.previous)return;
+
         let p1=this.Gridpos;
         let p2=this.previous.Gridpos;
 
@@ -770,6 +869,9 @@ class PathSegment extends Sprite{
                 this.previous.dir=2;
             }
 
+            if(!this.previous.previous){
+                this.previous.image=PathRails['start'][this.previous.dir];
+            }
             /*
             if(p1.y>p2.y)this.previous.dir=0;else
             if(p1.y<p2.y)this.previous.dir=2;else
@@ -778,10 +880,15 @@ class PathSegment extends Sprite{
             if(p1.x<p2.x)this.previous.dir=1;
             */
 
+            
+
         this.image=PathRails[this.dir][this.previous.dir];
+        
+        
         
         if(!this.image||this.dir<0)this.image=Images['SelectedTile'];
         
+    
         this.previous.updateSegment();
     }
     SpreadSelect(spread,select){
@@ -799,5 +906,5 @@ class PathSegment extends Sprite{
     }
     draw(pos={x:0,y:0,z:1}){
         super.draw(pos);
-        }
+    }
 }

@@ -1,4 +1,4 @@
-
+//initialiseer variabelen om scherm/game op te bouwen
 const canvas = document.querySelector('canvas');
 const c = canvas.getContext('2d');
 var fps = new FPS("#container");
@@ -8,6 +8,11 @@ let renderfreeze =0;
 let Images = {};
 let Paused=false;
 let camera;
+let GamePhase='generate';
+let PlayersInAction=0;
+
+
+
 function removeFromArray(arr,elt){
     for(var i = arr.length-1;i>=0;i--){
         if(arr[i] == elt){
@@ -56,6 +61,7 @@ function remove(el){
 function setAll(arr,key,value){
     for (const item of arr) item[key]=value;
 }
+//functie om images toe te voegen aan Images dictionary
 function addImage(key,img){
     Images[key]=new Image();
     Images[key].src=img;
@@ -83,6 +89,16 @@ addImage('WallLeftT','./img/WallLeftT.png');
 addImage('WallRightT','./img/WallRightT.png');
 
 //MovementPath parts
+addImage('MPSP','./img/Path/MPSP.png');
+addImage('MPSPLU','./img/Path/MPSPLU.png');
+addImage('MPSPU','./img/Path/MPSPU.png');
+addImage('MPSPRU','./img/Path/MPSPRU.png');
+addImage('MPSPR','./img/Path/MPSPR.png');
+addImage('MPSPRD','./img/Path/MPSPRD.png');
+addImage('MPSPD','./img/Path/MPSPD.png');
+addImage('MPSPLD','./img/Path/MPSPLD.png');
+addImage('MPSPL','./img/Path/MPSPL.png');
+
 addImage('MPBL','./img/Path/MPBL.png');
 addImage('MPBR','./img/Path/MPBR.png');
 addImage('MPBU','./img/Path/MPBU.png');
@@ -110,8 +126,18 @@ addImage('MPVEU','./img/Path/MPVEU.png');
 addImage('MPDERU','./img/Path/MPDERU.png');
 addImage('MPHER','./img/Path/MPHER.png');
 
-
+//gebruik dictionary om de image van het PathSegment Object te berekenen
 let PathRails = {
+'start':{
+    0 : Images['MPSPRD'],
+    1 : Images['MPSPD'],
+    2 : Images['MPSPLD'],
+    3 : Images['MPSPL'],
+    4 : Images['MPSPLU'],
+    5 : Images['MPSPU'],
+    6 : Images['MPSPRU'],
+    7 : Images['MPSPR'],
+},
 0:{
     7 : Images['MPHBLD'],
     0 : Images['MPDL'],
@@ -131,7 +157,7 @@ let PathRails = {
     3 : Images['MPHBRD'],
     4 : Images['MPBD'],
     6 : Images['MPDR'],
-},3:{
+},3:{ 
     2 : Images['MPHBLU'],
     3 : Images['MPH'],
     4 : Images['MPHBLD'],
@@ -170,33 +196,6 @@ let PathRails = {
     6 : Images['MPDERU'],
     7 : Images['MPHER'],
 }};
-/*
-    0 : Images['MPDERD'],
-    1 : Images['MPVED'],
-    2 : Images['MPDELD'],
-    3 : Images['MPHEL'],
-    4 : Images['MPDELU'],
-    5 : Images['MPVEU'],
-    6 : Images['MPDERU'],
-    7 : Images['MPHER'],
-
-/*
-6:{
-    0 : Images['MPBL'],
-    3 : Images['MPDR'],
-    4 : Images['MPBD'],
-    4.5:Images['MPHBRD'],
-    1 : Images['MPDR'],
-    1.5:Images['MPVBLU']
-
-1:{
-    0 : Images['MPBU'],
-    0.5:Images['MPHBLU'],
-    3 : Images['MPDR'],
-    3.5:Images['MPVBRD'],
-    4 : Images['MPBR'],
-    1 : Images['MPDR'],
-*/
 
 
 

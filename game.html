@@ -9,11 +9,14 @@
        canvas { position: absolute; left: 0; top: 0; }
    </style>
 </head>
-<body onmousemove="getCursorPosition(event)" onmousedown="ClickEvent(event)" onmouseup="ClickReleaseEvent(event)">
+<!--functies uit game.js worden hier de muis acties aangeroepen-->
+<body onmousemove="getCursorPosition(event)" onmousedown="ClickEvent(event)" onmouseup="ClickReleaseEvent(event)"> 
+  
   <canvas id="game"></canvas>
-  <script src="js/dist/fps.min.js"></script>
-  <script src="js/setup.js"></script>
-  <script src="js/classes.js"></script>
-  <script src="js/game.js"></script>
+  <!-- de js bestanden die gebruikt worden -->
+  <script src="js/dist/fps.min.js"></script> <!-- van internet gehaald om fps in de browser weer te geven -->
+  <script src="js/setup.js"></script> <!-- functies om spel op te bouwen-->
+  <script src="js/classes.js"></script><!-- hier worden alle classes geinitialiseerd voor de game-->
+  <script src="js/game.js"></script><!-- code om het spel te spelen-->
 </body>
 </html>

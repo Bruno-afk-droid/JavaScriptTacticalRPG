@@ -11,8 +11,11 @@ let camera;
 let GamePhase='generate';
 let PlayersInAction=0;
 
-
-
+function swapIndex(arr,i1,i2){
+    let v = arr[i1];
+    arr[i1]=arr[i2];
+    arr[i2]=v;
+}
 function removeFromArray(arr,elt){
     for(var i = arr.length-1;i>=0;i--){
         if(arr[i] == elt){
@@ -35,7 +38,9 @@ function heuristic(a,b){
 function scroll(x1,x2,p){
     return (x2-x1*p+x1);
 }
-
+function numPos(n){
+    return n < 0 ? -n : n;
+}
 function $(el){
     return document.getElementById(el);
 }

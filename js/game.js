@@ -1,49 +1,55 @@
-//Het scherm opbouwen
-c.imageSmoothingEnabled = false;
+let Objects;
+let keys;
+let Terrain;
+let TerrainUI;
+let TerrainStart;
+let Players;
 
-//Camera object aanmaken
-camera = new Camera({x:-canvas.width,y:-canvas.height, width:canvas.width*2, height:canvas.height*2});
+    //Het scherm opbouwen
+    c.imageSmoothingEnabled = false;
 
-c.fillRect(-canvas.width,-canvas.height, canvas.width*2, canvas.height*2);
+    //Camera object aanmaken
+    camera = new Camera({x:-canvas.width,y:-canvas.height, width:canvas.width*2, height:canvas.height*2});
 
-//anders objecten die gebruikt worden
-let Objects = [];
-let keys = {enter: false,right: false,down: false, left:false, up:false};
-let Terrain = new Array();
-let TerrainUI = new Array();
-let TerrainStart ={x:0,y:0,z:0};
-let Players = new Array();
+    c.fillRect(-canvas.width,-canvas.height, canvas.width*2, canvas.height*2);
 
-//Grote van de tiles worden hier ingesteld
-w = 47;
-h = 23;
-let st = {x:0,y:0,z:0};
+    //anders objecten die gebruikt worden
+     Objects = [];
+     keys = {enter: false,right: false,down: false, left:false, up:false};
+     Terrain = new Array();
+     TerrainUI = new Array();
+     TerrainStart ={x:0,y:0,z:0};
+     Players = new Array();
 
-//Het terrein opbouwen obv door speler ingevoerde configuratie
-Lx = gup('TerrainSize');
-st.x=Math.max(st.x,Lx);
-for (let x = 0; x < Lx; x++) {
-    Terrain[x] = new Array();       
-    Ly = gup('TerrainSize');
-    st.y=Math.max(st.y,Ly-1);
-    for (let y = 0; y < Ly; y++) {
-        Terrain[x][y]=new Array();
-        Lz = randomRange(1 ,3);
-        if(Lz!=3)Lz=1;
-        st.z=Math.max(st.z,Lz);
-        for (let z = 0; z < Lz; z++) {
-            AddTile(x,y,z);
+    //Grote van de tiles worden hier ingesteld
+    w = 47;
+    h = 23;
+    let st = {x:0,y:0,z:0};
+
+    //Het terrein opbouwen obv door speler ingevoerde configuratie
+    Lx = gup('TerrainSize');
+    st.x=Math.max(st.x,Lx);
+    for (let x = 0; x < Lx; x++) {
+        Terrain[x] = new Array();       
+        Ly = gup('TerrainSize');
+        st.y=Math.max(st.y,Ly-1);
+        for (let y = 0; y < Ly; y++) {
+            Terrain[x][y]=new Array();
+            Lz = randomRange(1 ,3);
+            if(Lz!=3)Lz=1;
+            st.z=Math.max(st.z,Lz);
+            for (let z = 0; z < Lz; z++) {
+                AddTile(x,y,z);
+            }
         }
-    }
-}Terrain.push(new Array());
-TerrainStart={x:-((w*st.x)+(w*st.y))/2,y:-(-(h*st.x)+(h*st.y))/2,z:0};
+    }Terrain.push(new Array());
+    TerrainStart={x:-((w*st.x)+(w*st.y))/2,y:-(-(h*st.x)+(h*st.y))/2,z:0};
 
-//spawn het player object op een random tile
-spawnPlayer(GetRandomTile());
+    //spawn het player object op een random tile
+    spawnPlayer(GetRandomTile());
 
-//initialiseert plan fase van het spel
-setUpPlanPhase();
-
+    //initialiseert plan fase van het spel
+    setUpPlanPhase();
 
 //Terrain.forEach(function(x){x.forEach(function(y){y.forEach(function(z){ConnectTile(z.Gridpos.x,z.Gridpos.y,z.Gridpos.z,z)})})});
 

@@ -5,15 +5,15 @@ let TerrainUI;
 let TerrainStart;
 let Players;
 //Grote van de tiles worden hier ingesteld
-w = 47;
-h = 23;
+let TileWidth = 47;
+let TileHeight = 23;
 let st = {x:0,y:0,z:0};
 try{
     //Het scherm opbouwen
     c.imageSmoothingEnabled = false;
 
     //Camera object aanmaken
-    camera = new Camera({x:-canvas.width,y:-canvas.height, width:canvas.width*2, height:canvas.height*2});
+    GameCamera = new Camera({x:-canvas.width,y:-canvas.height, width:canvas.width*2, height:canvas.height*2});
 
     c.fillRect(-canvas.width,-canvas.height, canvas.width*2, canvas.height*2);
 
@@ -44,10 +44,10 @@ try{
             }
         }
     }Terrain.push(new Array());
-    TerrainStart={x:-((w*st.x)+(w*st.y))/2,y:-(-(h*st.x)+(h*st.y))/2,z:0};
+    TerrainStart={x:-((TileWidth*st.x)+(TileWidth*st.y))/2,y:-(-(TileHeight*st.x)+(TileHeight*st.y))/2,z:0};
 
     //spawn het player object op een random tile
-    for(var i=0;i<3;i++)
+    for(var i=0;i<2;i++)
     spawnPlayer(getRandomTile());
 
     //initialiseert plan fase van het spel
@@ -55,7 +55,7 @@ try{
 }catch(error){
     alert("Instalatie error: "+error);
 }
-//Terrain.forEach(function(x){x.forEach(function(y){y.forEach(function(z){connectTile(z.Gridpos.x,z.Gridpos.y,z.Gridpos.z,z)})})});
+//Terrain.forEach(function(x){x.forEach(function(y){y.forEach(function(z){connectTile(z.gridPos.x,z.gridPos.y,z.gridPos.z,z)})})});
 
 function setTile(x,y,z,tile=new GridTile({x:x,y:y,z:z}),arr=Terrain){ 
     while(arr.length-1<x)arr.push(new Array());
@@ -66,126 +66,127 @@ function setTile(x,y,z,tile=new GridTile({x:x,y:y,z:z}),arr=Terrain){
 
     //north
     if(getTile(x,y-1,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.N=arr[x][y-1][z];
-        arr[x][y-1][z].Adjacent.S=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.N=arr[x][y-1][z];
+        arr[x][y-1][z].adjacent.S=arr[x][y][z];
     }
 
     //east
     if(getTile(x+1,y,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.E=arr[x+1][y][z];
-        arr[x+1][y][z].Adjacent.W=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.E=arr[x+1][y][z];
+        arr[x+1][y][z].adjacent.W=arr[x][y][z];
     }
 
     //south
     if(getTile(x,y+1,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.S=arr[x][y+1][z];
-        arr[x][y+1][z].Adjacent.N=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.S=arr[x][y+1][z];
+        arr[x][y+1][z].adjacent.N=arr[x][y][z];
     }
 
     //west
     if(getTile(x-1,y,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.W=arr[x-1][y][z];
-        arr[x-1][y][z].Adjacent.E=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.W=arr[x-1][y][z];
+        arr[x-1][y][z].adjacent.E=arr[x][y][z];
     }
 
     //north-east
     if(getTile(x+1,y-1,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.NE=arr[x+1][y-1][z];
-        arr[x+1][y-1][z].Adjacent.SW=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.NE=arr[x+1][y-1][z];
+        arr[x+1][y-1][z].adjacent.SW=arr[x][y][z];
     }
     //south-east
     if(getTile(x+1,y+1,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.SE=arr[x+1][y+1][z];
-        arr[x+1][y+1][z].Adjacent.NW=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.SE=arr[x+1][y+1][z];
+        arr[x+1][y+1][z].adjacent.NW=arr[x][y][z];
     }    
     //norht-west
     if(getTile(x-1,y-1,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.NW=arr[x-1][y-1][z];
-        arr[x-1][y-1][z].Adjacent.SE=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.NW=arr[x-1][y-1][z];
+        arr[x-1][y-1][z].adjacent.SE=arr[x][y][z];
     }
     //south-west
     if(getTile(x-1,y+1,z,arr)!=null){
-        if(tile)arr[x][y][z].Adjacent.SW=arr[x-1][y+1][z];
-       arr[x-1][y+1][z].Adjacent.NE=arr[x][y][z];
+        if(tile)arr[x][y][z].adjacent.SW=arr[x-1][y+1][z];
+       arr[x-1][y+1][z].adjacent.NE=arr[x][y][z];
     }
 
     //down
     if(getTile(x,y,z-1,arr)!=null){
-        if(tile)arr[x][y][z].StackedOn=arr[x][y][z-1];
-        arr[x][y][z-1].StackedUnder=arr[x][y][z];
+        if(tile)arr[x][y][z].stackedOn=arr[x][y][z-1];
+        arr[x][y][z-1].stackedUnder=arr[x][y][z];
         arr[x][y][z-1].hidden=true;
     }
     //up
     if(getTile(x,y,z+1,arr)!=null){
-        if(tile)arr[x][y][z].StackedUnder=arr[x][y][z+1];
-        arr[x][y][z+1].StackedOn=arr[x][y][z];
+        if(tile)arr[x][y][z].stackedUnder=arr[x][y][z+1];
+        arr[x][y][z+1].stackedOn=arr[x][y][z];
     }
 }
 function connectTile(x,y,z,tile,arr=Terrain){
     //north
     if(getTile(x,y-1,z,arr)!=null){
-        arr[x][y][z].Adjacent.N=arr[x][y-1][z];
-        arr[x][y-1][z].Adjacent.S=arr[x][y][z];
+        arr[x][y][z].adjacent.N=arr[x][y-1][z];
+        arr[x][y-1][z].adjacent.S=arr[x][y][z];
     }
 
     //east
     if(getTile(x+1,y,z,arr)!=null){
-        arr[x][y][z].Adjacent.E=arr[x+1][y][z];
-        arr[x+1][y][z].Adjacent.W=arr[x][y][z];
+        arr[x][y][z].adjacent.E=arr[x+1][y][z];
+        arr[x+1][y][z].adjacent.W=arr[x][y][z];
     }
 
     //south
     if(getTile(x,y+1,z,arr)!=null){
-        arr[x][y][z].Adjacent.S=arr[x][y+1][z];
-        arr[x][y+1][z].Adjacent.N=arr[x][y][z];
+        arr[x][y][z].adjacent.S=arr[x][y+1][z];
+        arr[x][y+1][z].adjacent.N=arr[x][y][z];
     }
 
     //west
     if(getTile(x-1,y,z,arr)!=null){
-        arr[x][y][z].Adjacent.W=arr[x-1][y][z];
-        arr[x-1][y][z].Adjacent.E=arr[x][y][z];
+        arr[x][y][z].adjacent.W=arr[x-1][y][z];
+        arr[x-1][y][z].adjacent.E=arr[x][y][z];
     }
 
     //north-east
     if(getTile(x+1,y-1,z,arr)!=null){
-        arr[x][y][z].Adjacent.NE=arr[x+1][y-1][z];
-        arr[x+1][y-1][z].Adjacent.SW=arr[x][y][z];
+        arr[x][y][z].adjacent.NE=arr[x+1][y-1][z];
+        arr[x+1][y-1][z].adjacent.SW=arr[x][y][z];
     }
     //south-east
     if(getTile(x+1,y+1,z,arr)!=null){
-        arr[x][y][z].Adjacent.SE=arr[x+1][y+1][z];
-        arr[x+1][y+1][z].Adjacent.NW=arr[x][y][z];
+        arr[x][y][z].adjacent.SE=arr[x+1][y+1][z];
+        arr[x+1][y+1][z].adjacent.NW=arr[x][y][z];
     }    
     //norht-west
     if(getTile(x-1,y-1,z,arr)!=null){
-        arr[x][y][z].Adjacent.NW=arr[x-1][y-1][z];
-        arr[x-1][y-1][z].Adjacent.SE=arr[x][y][z];
+        arr[x][y][z].adjacent.NW=arr[x-1][y-1][z];
+        arr[x-1][y-1][z].adjacent.SE=arr[x][y][z];
     }
     //south-west
     if(getTile(x-1,y+1,z,arr)!=null){
-       arr[x][y][z].Adjacent.SW=arr[x-1][y+1][z];
-       arr[x-1][y+1][z].Adjacent.NE=arr[x][y][z];
+       arr[x][y][z].adjacent.SW=arr[x-1][y+1][z];
+       arr[x-1][y+1][z].adjacent.NE=arr[x][y][z];
     }
 
     //down
     if(getTile(x,y,z-1,arr)!=null){
-        arr[x][y][z].StackedOn=arr[x][y][z-1];
-        arr[x][y][z-1].StackedUnder=arr[x][y][z];
+        arr[x][y][z].stackedOn=arr[x][y][z-1];
+        arr[x][y][z-1].stackedUnder=arr[x][y][z];
         arr[x][y][z-1].hidden=true;
     }
     //up
     if(getTile(x,y,z+1,arr)!=null){
-        arr[x][y][z].StackedUnder=arr[x][y][z+1];
-        arr[x][y][z+1].StackedOn=arr[x][y][z];
+        arr[x][y][z].stackedUnder=arr[x][y][z+1];
+        arr[x][y][z+1].stackedOn=arr[x][y][z];
     }
 }
 function getTile(x=0,y=0,z=0,arr=Terrain){
     return arr[x]?arr[x][y]?arr[x][y][z]?arr[x][y][z]:null:null:null;
 }
 function movePlayerOnGrid(player,pos={x:0,y:0,z:0},grid=Terrain){
-    grid[player.Gridpos.x][player.Gridpos.y][player.Gridpos.z]=null;
+    if(grid[pos.x][pos.y][pos.z]!=null)return;
+    grid[player.gridPos.x][player.gridPos.y][player.gridPos.z]=null;
     grid[pos.x][pos.y][pos.z]=player;
-    player.Gridpos=pos;
+    player.gridPos=pos;
 }
 function loopTileGrid(arr,f){
     arr.forEach(function(x){x.forEach(function(y){y.forEach(function(z){z?.resetSegment();})})});
@@ -205,7 +206,7 @@ function getRandomTile(arr=Terrain){
     return result;
 }
 function getTileCoordinates(x,y,z=0){
-    return {x:(w*x)+(w*y),y:(h*x)+(h*y),z:(71*z)};
+    return {x:(TileWidth*x)+(TileWidth*y),y:(TileHeight*x)+(TileHeight*y),z:(71*z)};
 }
 function distance(x,y,x1,y2){
     return Math.sqrt(Math.pow(x-x1,2)+Math.pow(y-y2,2))
@@ -221,28 +222,28 @@ function resizeCanvas(){
     c.translate(w/2,h/2);
     c.strokeStyle = 'red';
     c.fillStyle = 'black';
-    camera.view.width=w;
-    camera.view.height=h;
-    camera.CanvasUpdate();
+    GameCamera.view.width=w;
+    GameCamera.view.height=h;
+    GameCamera.CanvasUpdate();
 }
 function spawnPlayer(Tile){
-    while(Tile.StackedUnder!=null)Tile=Tile.StackedUnder;
-    player = new PlayerBase({x:Tile.Gridpos.x,y:Tile.Gridpos.y,z:Tile.Gridpos.z+1},Terrain)
+    while(Tile.stackedUnder!=null)Tile=Tile.stackedUnder;
+    player = new PlayerBase({x:Tile.gridPos.x,y:Tile.gridPos.y,z:Tile.gridPos.z+1})
     Players.push(player);
-    //camera.selectedItem.setPosition(structuredClone(Tile.Gridpos));
-    Terrain[Tile.Gridpos.x][Tile.Gridpos.y][Tile.Gridpos.z+1]=player;
+    //GameCamera.selectedItem.setPosition(structuredClone(Tile.gridPos));
+    Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
 }
 function tick(){
     if(!Paused){
         try{
-            if(keys.left&&camera.view.x>=0)camera.view.x-=5;
-            if(keys.right&&camera.view.x+camera.view.width<=(st.x+st.y)*w+w)camera.view.x+=5;
-            if(keys.up&&camera.view.y>=-st.x*h)camera.view.y-=5;
-            if(keys.down&&camera.view.y+camera.view.height<=st.y*h+102)camera.view.y+=5;
+            if(keys.left&&GameCamera.view.x>=0)GameCamera.view.x-=5;
+            if(keys.right&&GameCamera.view.x+GameCamera.view.width<=(st.x+st.y)*TileWidth+TileWidth)GameCamera.view.x+=5;
+            if(keys.up&&GameCamera.view.y>=-st.x*TileHeight)GameCamera.view.y-=5;
+            if(keys.down&&GameCamera.view.y+GameCamera.view.height<=st.y*TileHeight+102)GameCamera.view.y+=5;
             if(keys.enter){
-                if(camera.zoomIn<2.0)
-                camera.zoomIn+=0.02;
-            }else if(camera.zoomIn>1.0) camera.zoomIn-=0.02;
+                if(GameCamera.zoomIn<2.0)
+                GameCamera.zoomIn+=0.02;
+            }else if(GameCamera.zoomIn>1.0) GameCamera.zoomIn-=0.02;
             
             for (let i = 0; i < Players.length; i++) {
                 Players[i].tick();
@@ -251,20 +252,20 @@ function tick(){
             alert("run time Error: "+ error);
         }
     }
-    camera.tick();
+    GameCamera.tick();
     
     
     animate();
-    //SelectedTile = getTileByMousePosition(CursorPosition.x,CursorPosition.y,camera);
+    //SelectedTile = getTileByMousePosition(CursorPosition.x,CursorPosition.y,GameCamera);
     //Players[0].setPossition(SelectedTile? SelectedTile : {x:0,y:0,z:0});
     //Players[0].MovementPath.end=Players[0].MovementPath.movementArea[randomRange(0,st.x-1)][randomRange(0,st.y)][0];
-    //Players[0].MovementPath.GeneratePath(SelectedTile?SelectedTile.Gridpos:{x:0,y:0,z:0});
+    //Players[0].MovementPath.GeneratePath(SelectedTile?SelectedTile.gridPos:{x:0,y:0,z:0});
     setTimeout(() => {
         tick();
     }, 1000/60)
 }
 function renderTerrain(){
-    camera.renderView(Terrain);
+    GameCamera.renderView(Terrain);
     //Terrain.reduceRight((_,x) => x.forEach(function(y){y.forEach(function(z){z?.draw()})}));
     //Terrain.forEach(function(x){x.forEach(function(y){y.forEach(function(z){z?.draw()})})});
 }
@@ -283,11 +284,11 @@ function animate(){
 resizeCanvas();
 
 setTimeout(() => {
-    camera.setView(Players[0].position);
-    //camera.view.x=Players[0].position.x;
-    //camera.view.y=Players[0].position.y;
-    //camera.view.x=-canvas.width/2;
-    //camera.view.y=-canvas.height/2; 
+    GameCamera.setView(Players[0].position);
+    //GameCamera.view.x=Players[0].position.x;
+    //GameCamera.view.y=Players[0].position.y;
+    //GameCamera.view.x=-canvas.width/2;
+    //GameCamera.view.y=-canvas.height/2; 
     tick();
     animate();
 }, 1000/60);
@@ -297,10 +298,10 @@ function getCursorPosition(event){
     CursorPosition.y=event.clientY;
 }
 function ClickEvent(event){
-    camera?.triggerClick();
+    GameCamera?.triggerClick();
 }
 function ClickReleaseEvent(event){
-    camera?.triggerClickRelease();
+    GameCamera?.triggerClickRelease();
 }
 
 window.addEventListener('keydown', (event) => {

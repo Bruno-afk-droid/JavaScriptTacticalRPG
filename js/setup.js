@@ -7,7 +7,7 @@ let CursorPosition = {x:0,y:0,z:0};
 let renderfreeze =0;
 let Images = {};
 let Paused=false;
-let camera;
+let GameCamera;
 let GamePhase='generate';
 let PlayersInAction=0;
 
@@ -65,6 +65,10 @@ function remove(el){
 }
 function setAll(arr,key,value){
     for (const item of arr) item[key]=value;
+}
+function isAnyEqual(arr,key,value){
+    for (const item of arr) if(item[key]) return true;
+    return false;
 }
 //functie om images toe te voegen aan Images dictionary
 function addImage(key,img){

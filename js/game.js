@@ -3,7 +3,8 @@ let keys;
 let Terrain;
 let TerrainUI;
 let TerrainStart;
-let Players;
+let Characters;
+let ControlebleCharacters;
 //Grote van de tiles worden hier ingesteld
 let TileWidth = 47;
 let TileHeight = 23;
@@ -23,8 +24,8 @@ try{
      Terrain = new Array();
      TerrainUI = new Array();
      TerrainStart ={x:0,y:0,z:0};
-     Players = new Array();
-
+     Characters = new Array();
+     ControlebleCharacters = new Array();
     
 
     //Het terrein opbouwen obv door speler ingevoerde configuratie
@@ -49,6 +50,7 @@ try{
     //spawn het player object op een random tile
     for(var i=0;i<2;i++)
     spawnPlayer(getRandomTile());
+    spawnDummy(getRandomTile());
 
     //initialiseert plan fase van het spel
     setUpPlanPhase();
@@ -248,7 +250,15 @@ function resizeCanvas(){
 function spawnPlayer(Tile){
     while(Tile.stackedUnder!=null)Tile=Tile.stackedUnder;
     player = new PlayerBase({x:Tile.gridPos.x,y:Tile.gridPos.y,z:Tile.gridPos.z+1})
-    Players.push(player);
+    Characters.push(player);
+    ControlebleCharacters.push(player);
+    //GameCamera.selectedItem.setPosition(structuredClone(Tile.gridPos));
+    Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
+}
+function spawnDummy(Tile){
+    while(Tile.stackedUnder!=null)Tile=Tile.stackedUnder;
+    player = new DummyBase({x:Tile.gridPos.x,y:Tile.gridPos.y,z:Tile.gridPos.z+1});
+    Characters.push(player);
     //GameCamera.selectedItem.setPosition(structuredClone(Tile.gridPos));
     Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
 }
@@ -264,8 +274,8 @@ function tick(){
                 GameCamera.zoomIn+=0.02;
             }else if(GameCamera.zoomIn>1.0) GameCamera.zoomIn-=0.02;
             
-            for (let i = 0; i < Players.length; i++) {
-                Players[i].tick();
+            for (let i = 0; i < Characters.length; i++) {
+                Characters[i].tick();
             }
         }catch(error){
             alert("run time Error: "+ error);
@@ -276,9 +286,9 @@ function tick(){
     
     animate();
     //SelectedTile = getTileByMousePosition(CursorPosition.x,CursorPosition.y,GameCamera);
-    //Players[0].setPossition(SelectedTile? SelectedTile : {x:0,y:0,z:0});
-    //Players[0].MovementPath.end=Players[0].MovementPath.movementArea[randomRange(0,st.x-1)][randomRange(0,st.y)][0];
-    //Players[0].MovementPath.GeneratePath(SelectedTile?SelectedTile.gridPos:{x:0,y:0,z:0});
+    //Characters[0].setPossition(SelectedTile? SelectedTile : {x:0,y:0,z:0});
+    //Characters[0].MovementPath.end=Characters[0].MovementPath.movementArea[randomRange(0,st.x-1)][randomRange(0,st.y)][0];
+    //Characters[0].MovementPath.GeneratePath(SelectedTile?SelectedTile.gridPos:{x:0,y:0,z:0});
     setTimeout(() => {
         tick();
     }, 1000/60)
@@ -301,11 +311,11 @@ function animate(){
     
 }
 resizeCanvas();
-
+GameCamera.updateDisabledTiles();
 setTimeout(() => {
-    GameCamera.setView(Players[0].position);
-    //GameCamera.view.x=Players[0].position.x;
-    //GameCamera.view.y=Players[0].position.y;
+    GameCamera.setView(Characters[0].position);
+    //GameCamera.view.x=Characters[0].position.x;
+    //GameCamera.view.y=Characters[0].position.y;
     //GameCamera.view.x=-canvas.width/2;
     //GameCamera.view.y=-canvas.height/2; 
     tick();

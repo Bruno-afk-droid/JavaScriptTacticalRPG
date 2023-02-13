@@ -15,26 +15,14 @@ function closehelpMenu(){
 }
 function startFightPhase(){
     if(GamePhase!='plan')return
-    for (const player of Players) {
-        PlayersInAction++;
-        player.setMovement();
-        player.movementPath.hidden=true;
-        player.actionCircle.hidden=true;
-        setAll(player.selectebleTiles,'image',Images['Tile']);
-        setAll(player.movementPath.path,'hidden',true);
-        player.selectedAction='action';
-        GameCamera.deHighLightArea(player.movementArea,GameCamera.renderingTiles);
+    for (const player of Characters) {
+        player.setStateToFightPhase();
     }
     GamePhase='action';
 }
 function setUpPlanPhase(){ 
-    for (const player of Players) {
-        player.movementPath.hidden=false;
-        player.actionCircle.hidden=false;
-        player.updatePlayerPosition();
-        GameCamera.highLightPlayer(player,GameCamera.renderingTiles);
-        movePlayerOnGrid(player,player.gridPos);
-        setAll(player.movementPath.path,'hidden',false);
+    for (const player of Characters) {
+        player.setStateToPlanPhase();
         //GameCamera.highLightArea(player.movementArea);
     }
     GamePhase='plan';
@@ -47,8 +35,8 @@ class Camera {
         this.renderingTiles=new Array();
         this.zoomIn=1.0;
         this.selectCursor = {x:0,y:0,z:0};
-        this.selectedPos = null;
-        this.selectebleTiles = {};
+        this.selectebleTiles=new Array();
+        this.disabledTiles=new Array();
         this.UIItems=new Array();
         //<iframe src='help.html' title='test'></iframe>
         this.helpMenu=createFrame(0,0,500,600);
@@ -202,6 +190,7 @@ class Camera {
     }
     triggerClickRelease(){
         this.selectedItem?.triggerRelease();
+        this.updateDisabledTiles();
     }
     renderView(Terrain){
         let rel = {x:this.view.x+(this.view.width/2),y:this.view.y+(this.view.height/2),z:this.zoomIn};
@@ -209,6 +198,10 @@ class Camera {
             if(!Paused||this.pauseMenu.includes(render))
             render.draw(rel);
         }
+    }
+    updateDisabledTiles(){
+        this.disabledTiles=pickedFromObjects(ControlebleCharacters,'actionCircle','cursor');
+        this.disabledTiles=this.disabledTiles.concat(pickedFromObjects(Characters,'movementPath','start','gridPos'));
     }
 }
 //De sprite class wordt gebruikt om alle images te renderen in het scherm
@@ -403,6 +396,11 @@ class MovementAction extends UIItem{
             for (const tile of this.owner.selectebleTiles) {
                 let d = tile.containsPosition(GameCamera.selectCursor);
                 if(d&&d<distance) {
+                    removeFromArray(GameCamera.disabledTiles,this.cursor);
+                    removeFromArray(GameCamera.disabledTiles,this.owner.movementPath.start.gridPos);
+                    if(GameCamera.disabledTiles.includes(tile.gridPos)){ 
+                        continue;
+                    }
                     distance=d;
                     this.cursor=tile.gridPos;
                 } 
@@ -410,9 +408,9 @@ class MovementAction extends UIItem{
             //this.selectCursor.position=Zim;
             if(!samePosition(this.cursor,this.previousPos)){
                 try{
-                //Players[0].movementArea=Players[0].generatemovementArea(15);
+                //Characters[0].movementArea=Characters[0].generatemovementArea(15);
                 this.owner.movementPath.generatePath(this.gridPos,this.cursor);
-                //TerrainUI[0]=Players[0].movementPath;
+                //TerrainUI[0]=Characters[0].movementPath;
                 //console.log("generate")
                 this.previousPos=this.cursor;
                 }catch(error){
@@ -598,19 +596,16 @@ class GridTile extends Sprite{
     }
 }
 //PlayerBase is een sprite object dat wordt gebruikt door de speler om basis acties uit te voeren
-class PlayerBase extends Sprite{
-    constructor(gridPos,id=Players.length){
-        super({x:0,y:0,z:0},'Player',94,94);
-        this.objectType='Player';
+class CharacterBase extends Sprite{
+    constructor(gridPos,sprite,id){
+        super(gridPos,sprite,94,94);
+        this.objectType=sprite;
         this.id=id;
         this.gridPos=gridPos;
         this.depth=this.gridPos.z;
         this.setPossition(gridPos);
         console.log(this.gridPos);
         this.selectedAction='positioning';
-        this.actionCircle=new MovementAction({x:0,y:0,z:0},'MovementAction',this,'SelectedMovementAction','MPSP',null,94,48);
-        this.actionCircle.setPosition({x:this.gridPos.x,y:this.gridPos.y,z:this.gridPos.z-1});
-        GameCamera.UIItems.push(this.actionCircle);
         this.movementDistance=6;
         this.selectebleTiles=new Array();
         this.movementArea=this.generatemovementArea();
@@ -700,20 +695,19 @@ class PlayerBase extends Sprite{
             ));
         }else{
             if(this.selectedAction=='positioning')return;
-            //this.updatePlayerPosition();
+            //this.updateCharacterPosition();
             //this.movementPath.start=getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z,this.movementArea);
-               if(this.selectedAction=='action'&&--PlayersInAction<=0)setUpPlanPhase();
+               if(this.selectedAction=='action'&&--CharactersInAction<=0)setUpPlanPhase();
             this.selectedAction='positioning';
         }
     }
-    updatePlayerPosition(){
+    updateCharacterPosition(){
         this.movementArea=this.generatemovementArea();
         this.movementPath.regeneratePath(
             getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z-1,this.movementArea),
             getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z-1,this.movementArea),
             this.movementArea
         );
-        this.actionCircle.setPosition({x:this.gridPos.x,y:this.gridPos.y,z:this.gridPos.z-1});
     }
     highLightPlayer(){
 
@@ -757,6 +751,47 @@ class PlayerBase extends Sprite{
     }
     makeTransparent(){
 
+    }
+    setStateToPlanPhase(){
+        this.updateCharacterPosition();
+        GameCamera.highLightPlayer(this,GameCamera.renderingTiles);
+        movePlayerOnGrid(this,this.gridPos);
+        setAll(this.movementPath.path,'hidden',false);
+    }
+    setStateToFightPhase(){
+        CharactersInAction++;
+        this.setMovement();
+        setAll(this.selectebleTiles,'image',Images['Tile']);
+        setAll(this.movementPath.path,'hidden',true);
+        this.selectedAction='action';
+        GameCamera.deHighLightArea(this.movementArea,GameCamera.renderingTiles);
+    }
+}
+class PlayerBase extends CharacterBase{
+    constructor(gridPos,id=Characters.length){
+        super(gridPos,'Player',id);
+        this.actionCircle=new MovementAction({x:0,y:0,z:0},'MovementAction',this,'SelectedMovementAction','MPSP',null,94,48);
+        this.actionCircle.setPosition({x:this.gridPos.x,y:this.gridPos.y,z:this.gridPos.z-1});
+        GameCamera.UIItems.push(this.actionCircle);
+    }
+    updateCharacterPosition(){
+        super.updateCharacterPosition();
+        this.actionCircle.setPosition({x:this.gridPos.x,y:this.gridPos.y,z:this.gridPos.z-1});      
+    }
+    setStateToPlanPhase(){
+        this.movementPath.hidden=false;
+        this.actionCircle.hidden=false;
+        super.setStateToPlanPhase();
+    }
+    setStateToFightPhase(){
+        this.movementPath.hidden=true;
+        this.actionCircle.hidden=true;
+        super.setStateToFightPhase();
+    }
+}
+class DummyBase extends CharacterBase{
+    constructor(gridPos,id=Characters.length){
+        super(gridPos,'Dummy',id);
     }
 }
 //MovementPath is een object wordt gebruikt om een pad te genereren tussen twee tiles
@@ -828,7 +863,7 @@ class MovementPath{
             for (const key in adjacent) {
                 var neighbor = adjacent[key];
                 if(key.length>1&&(!adjacent[key[0]]||!adjacent[key[1]]))continue;
-                if(neighbor==null||getTile(neighbor.gridPos.x,neighbor.gridPos.y,neighbor.gridPos.z+1))continue;
+                if(neighbor==null)continue;
                 if(!closedSet.includes(neighbor)){
                     var tempG = current.g+1;
 

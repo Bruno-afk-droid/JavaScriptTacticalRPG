@@ -9,7 +9,7 @@ let Images = {};
 let Paused=false;
 let GameCamera;
 let GamePhase='generate';
-let PlayersInAction=0;
+let CharactersInAction=0;
 
 function swapIndex(arr,i1,i2){
     let v = arr[i1];
@@ -22,6 +22,20 @@ function removeFromArray(arr,elt){
             arr.splice(i,1);
         }
     }
+}
+function removeAllFromArray(arr,elt){
+    for(var i = elt.length-1;i>=0;i--){
+        removeFromArray(arr,elt[i]);
+    }
+}
+function pickedFromObjects(arr,...dir){
+    let result=new Array();
+    for (let object of arr) {
+        for (const a of dir){if(!object)continue;object=object[a];}
+        if(!object)continue;
+        result.push(object);
+    }
+    return result;
 }
 function gup (name) {
     name = RegExp ('[?&]' + name.replace (/([[\]])/, '\\$1') + '=([^&#]*)');
@@ -80,6 +94,7 @@ addImage('Tile','./img/Tile.png');
 addImage('WallLeft','./img/WallLeft.png');
 addImage('WallRight','./img/WallRight.png');
 addImage('Player','./img/TestPlayer.png');
+addImage('Dummy','./img/TestDummy.png');
 addImage('SelectedTile','./img/Selected/SelectedTile.png');
 addImage('MovementTile','./img/Selected/MovementTile.png');
 addImage('MovementAction','./img/Selected/MovementAction.png');

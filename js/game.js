@@ -63,7 +63,7 @@ function setTile(x,y,z,tile=new GridTile({x:x,y:y,z:z}),arr=Terrain){
     while(arr[x][y].length-1<z)arr[x][y].push(null);
     arr[x][y][z] = tile;
 
-
+    
     //north
     if(getTile(x,y-1,z,arr)!=null){
         if(tile)arr[x][y][z].adjacent.N=arr[x][y-1][z];
@@ -183,10 +183,29 @@ function getTile(x=0,y=0,z=0,arr=Terrain){
     return arr[x]?arr[x][y]?arr[x][y][z]?arr[x][y][z]:null:null:null;
 }
 function movePlayerOnGrid(player,pos={x:0,y:0,z:0},grid=Terrain){
-    if(grid[pos.x][pos.y][pos.z]!=null)return;
-    grid[player.gridPos.x][player.gridPos.y][player.gridPos.z]=null;
-    grid[pos.x][pos.y][pos.z]=player;
+
+    if(grid[player.gridPos.x][player.gridPos.y][player.gridPos.z]){
+        removeFromArray(grid[player.gridPos.x][player.gridPos.y][player.gridPos.z],player);
+        if(grid[player.gridPos.x][player.gridPos.y][player.gridPos.z].length==0){
+            grid[player.gridPos.x][player.gridPos.y][player.gridPos.z]=null;
+        }
+    }
+    if(!Array.isArray(grid[pos.x][pos.y][pos.z]))grid[pos.x][pos.y][pos.z]=new Array();
+    grid[pos.x][pos.y][pos.z].push(player);
+    player.gridPos=pos;   
+    /*
+    if(grid[player.gridPos.x][player.gridPos.y][player.gridPos.z]==player){
+        grid[player.gridPos.x][player.gridPos.y][player.gridPos.z]=null;
+    }
+    if(grid[pos.x][pos.y][pos.z]){
+        player.gridPos=pos;
+        return false;
+    }
+    grid[player.gridPos.x][player.gridPos.y][player.gridPos.z-1].stackedUnder=null;
     player.gridPos=pos;
+    grid[pos.x][pos.y][pos.z]=player;
+    */
+    return true;
 }
 function loopTileGrid(arr,f){
     arr.forEach(function(x){x.forEach(function(y){y.forEach(function(z){z?.resetSegment();})})});
@@ -197,7 +216,7 @@ function loopTileGrid(arr,f){
 }*/
 function getRandomTile(arr=Terrain){
     let result=null;
-    while(result==null){
+    while(result==null||result.objectType!='Tile'){
         let rx = Math.floor(Math.random() * arr.length);
         let ry = Math.floor(Math.random() * arr[rx].length);if(ry>=arr[rx].length)continue;
         let rz = Math.floor(Math.random() * arr[rx][ry].length);

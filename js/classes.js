@@ -23,7 +23,7 @@ function startFightPhase(){
         setAll(player.selectebleTiles,'image',Images['Tile']);
         setAll(player.movementPath.path,'hidden',true);
         player.selectedAction='action';
-        GameCamera.deHighLightArea(player.movementArea);
+        GameCamera.deHighLightArea(player.movementArea,GameCamera.renderingTiles);
     }
     GamePhase='action';
 }
@@ -33,6 +33,7 @@ function setUpPlanPhase(){
         player.actionCircle.hidden=false;
         player.updatePlayerPosition();
         GameCamera.highLightPlayer(player,GameCamera.renderingTiles);
+        movePlayerOnGrid(player,player.gridPos);
         setAll(player.movementPath.path,'hidden',false);
         //GameCamera.highLightArea(player.movementArea);
     }
@@ -86,7 +87,9 @@ class Camera {
     }
     highLightArea(area,grid){
         let result=new Array();
+        //let a = this.getHighlightableArea(area,grid);
         for (let tile of this.getHighlightableArea(area,grid)) {
+            if(tile.objectType!='Tile')continue;
             for(let x = 0; x<area.length;x++)
             for(let y = 0; y<area[x].length; y++)
             for(let z = 0; z<area[x][y].length;z++){
@@ -102,6 +105,7 @@ class Camera {
     }
     deHighLightArea(area,grid){
         for (let tile of this.getHighlightableArea(area,grid)) {
+            if(tile.objectType!='Tile')continue;
             for(let x = 0; x<area.length;x++)
             for(let y = 0; y<area[x].length; y++)
             for(let z = 0; z<area[x][y].length;z++){
@@ -117,8 +121,9 @@ class Camera {
     }
     highLightPlayer(player,grid){
         for (let tile of this.getHighlightableArea(player.movementArea,grid)) {
+            if(tile.objectType!='Tile')continue;
             if(!player||tile.gridPos.z<=player.gridPos.z)continue;
-            if(tile.isColliding(currentTile)){
+            if(tile.isColliding(player)){
                 tile.makeTransparent();
             } 
         }
@@ -143,8 +148,14 @@ class Camera {
             for (let x = Terrain.length-1; x >= 0; x--) {
                 for (let y = 0; y < Terrain[x].length; y++) {
                     for (let z = 0; z < Terrain[x][y].length; z++) {
-                        if(this.inView(Terrain[x][y][z])){
-                            this.addToRenderFrame(Terrain[x][y][z]);
+                        if(!Array.isArray(Terrain[x][y][z])){
+                            if(this.inView(Terrain[x][y][z])){
+                                this.addToRenderFrame(Terrain[x][y][z]);
+                            }
+                        }else{
+                            for (const l of Terrain[x][y][z]) if(this.inView(l)){
+                                this.addToRenderFrame(l);
+                            }
                         }
                     }
                 }  
@@ -170,9 +181,10 @@ class Camera {
         this.selectedItem?.deSelect();
         this.selectedItem=null;
         for (const item of this.UIItems) {
+            if(this.selectedItem)return;
             if((!item.relative&&item.containsPosition(this.selectCursor))
             ||((item.relative&&item.containsPosition(CursorPosition,-this.view.width/2,-this.view.height/2)))){
-                if(Paused&&!this.pauseMenu.includes(item))continue;
+                if(Paused&&!this.pauseMenu.includes(item)||item.objectType=='UIBox')continue;
                 item.select();
                 this.selectedItem=item;
             }
@@ -299,6 +311,7 @@ class UIBox extends UIItem {
     constructor(pos={x:0,y:0,z:999},image,width,height,depth=99999,relative=""){
         super(pos,image,width,height,depth);
         this.relative=relative;
+        this.objectType='UIBox';
     } 
     draw(pos={x:0,y:0,z:1}){
         super.draw(this.relative? this.relativePos : pos);
@@ -363,13 +376,13 @@ class MovementAction extends UIItem{
         super.select();
         this.image=this.selectImage;
         setAll(this.owner.selectebleTiles,'image',Images['MovementTile']);
-        GameCamera.highLightArea(this.owner.movementArea,GameCamera.renderTerrain);
+        GameCamera.highLightArea(this.owner.movementArea,GameCamera.renderingTiles);
     }
     deSelect(){
         super.deSelect();
         this.image=this.neutralImage;
         setAll(this.owner.selectebleTiles,'image',Images['Tile']);
-        GameCamera.deHighLightArea(this.owner.movementArea,GameCamera.renderTerrain);
+        GameCamera.deHighLightArea(this.owner.movementArea,GameCamera.renderingTiles);
     }
     trigger(){
         super.trigger();
@@ -413,7 +426,7 @@ class MovementAction extends UIItem{
     }
 }
 //GridTile is een sprite object dat wordt gebruikt als een tegel in het terrein.
-class GridTile extends Sprite{
+class GridTile extends Sprite{ 
     constructor(pos,image='Tile'){
         super(GridTile.getTileCoordinates(pos.x,pos.y,pos.z),image);
         this.objectType='Tile';
@@ -432,16 +445,12 @@ class GridTile extends Sprite{
         this.leftWall=new Sprite({x:this.position.x,y:this.position.y+23,z:this.position.z},this.transparent? 'WallLeftT':'WallLeft');
         this.rightWall=new Sprite({x:this.position.x+48,y:this.position.y+23,z:this.position.z},this.transparent? 'WallRightT':'WallRight');
     }
-
     static getTileCoordinates(x,y,z=0){
         return {x:(47*x)+(47*y),y:-(23*x)+(23*y),z:(71*z)};
     }
     static getAreaInRect(area,Rect={x:0,y:0,width:0,height:0}){
         let result=new Array();
-        for (let x=area.length-1;x>=0;x--) 
-        for (let y=0;y<area[x].length;y++)
-        for (let z=0;z<area[x][y].length;z++){
-            let current=getTile(x,y,z,area);
+        for (const current of area) {
             if(current?.isColliding(Rect))result.push(current);
         }
         return result;
@@ -470,6 +479,9 @@ class GridTile extends Sprite{
             if(result.end.y-result.end.z<c.position.y-c.position.z||result.end.y==-1)result.end.y=c.position.y-c.position.z;
         }
         return result;
+    }
+    getStackedUnder(){
+        return getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z+1);
     }
     movePosition(vel){
         this.position.x+=vel.x;
@@ -507,7 +519,7 @@ class GridTile extends Sprite{
             &&pos.x<this.position.x+this.width)? heuristic(pos,{x:this.position.x+(this.width/2),y:this.position.y-this.position.z+(this.height/2)}) : 500;
     }
     spreadSelect(spread,spreader='main',select=new Array()){
-        if(spread<=0||(!(spreader in this.spread)&&spread<=this.spread[spreader]&&select.includes(this))||this.stackedUnder)return select;
+        if(spread<=0||(!(spreader in this.spread)&&spread<=this.spread[spreader]&&select.includes(this))||(this.stackedUnder))return select;
         if(!select.includes(this)){
             select.push(this);
         }
@@ -601,11 +613,12 @@ class PlayerBase extends Sprite{
         GameCamera.UIItems.push(this.actionCircle);
         this.movementDistance=6;
         this.selectebleTiles=new Array();
-        this.movementArea=this.generatemovementArea(this.movementDistance);
+        this.movementArea=this.generatemovementArea();
         this.movementPath=new MovementPath(getTile(gridPos.x,gridPos.y,gridPos.z-1,this.movementArea),getTile(gridPos.x,gridPos.y,gridPos.z-1,this.movementArea),this.movementArea);
         this.movementQueue=Array();
         this.movementSpeed=8;
         this.movementProgression=60;
+        this.waitTimer=0;
         
         TerrainUI.push(this.movementPath);
     }
@@ -623,6 +636,7 @@ class PlayerBase extends Sprite{
         route.current=route.path[route.path.length-1];
         for (let i = route.path.length-2; i >= 0; i--) {
             const e = route.path[i];
+            if(!e.previous)continue;
             this.movementQueue.push({
                 x:e.gridPos.x-e.previous.gridPos.x,
                 y:e.gridPos.y-e.previous.gridPos.y,
@@ -635,9 +649,15 @@ class PlayerBase extends Sprite{
         st.x+=Math.sign(pos.x);
         st.y+=Math.sign(pos.y);
         st.z+=Math.sign(pos.z);
-        movePlayerOnGrid(this,st)
-        this.position=GridTile.getTileCoordinates(this.gridPos.x,this.gridPos.y,this.gridPos.z);
-        this.position.z-=23;
+
+        let r=movePlayerOnGrid(this,st);
+        if(r){
+            this.position=GridTile.getTileCoordinates(this.gridPos.x,this.gridPos.y,this.gridPos.z);
+            this.position.z-=23;
+        }else{
+
+        }
+        return r;
     }
     movePosition(vel){
         this.position.x+=vel.x;
@@ -653,9 +673,24 @@ class PlayerBase extends Sprite{
             if(numPos(mv.y.toFixed(2))>M)mv.y-=M*Math.sign(mv.y);else mv.y=0;
             if(numPos(mv.z.toFixed(2))>M)mv.z-=M*Math.sign(mv.z);else mv.z=0;
             if(numPos(mv.x)<=0&&numPos(mv.y)<=0&&numPos(mv.z)<=0){
-                this.movementQueue.shift();
                 this.moveWithGridPos(mp);
-                if(this.movementQueue.length==0)return;
+                this.movementQueue.shift();
+                
+                /*let c=getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z);
+                if(c!==this){
+                    this.moveWithGridPos({x:-mp.x,y:-mp.y,z:-mp.z});
+                    //if(c.movementQueue.length==1)return;
+                }*/
+                //if(reDo)return;
+                /*
+                    this.movementQueue.splice(0,this.movementQueue.length);
+                    this.movementPath.generatePath({x:this.gridPos.x,y:this.gridPos.y,z:this.gridPos.z-1},this.movementPath.end.gridPos);
+                    this.setMovement();
+                */
+                if(this.movementQueue.length==0){
+                    movePlayerOnGrid(this,this.gridPos);
+                    return;
+                }
             }
             
             this.movePosition(GridTile.getTileCoordinates(
@@ -664,7 +699,7 @@ class PlayerBase extends Sprite{
                 M*Math.sign(mv.z)
             ));
         }else{
-            if(this.selectedAction!='action')return;
+            if(this.selectedAction=='positioning')return;
             //this.updatePlayerPosition();
             //this.movementPath.start=getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z,this.movementArea);
                if(this.selectedAction=='action'&&--PlayersInAction<=0)setUpPlanPhase();
@@ -672,7 +707,7 @@ class PlayerBase extends Sprite{
         }
     }
     updatePlayerPosition(){
-        this.movementArea=this.generatemovementArea(this.movementDistance);
+        this.movementArea=this.generatemovementArea();
         this.movementPath.regeneratePath(
             getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z-1,this.movementArea),
             getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z-1,this.movementArea),
@@ -683,7 +718,7 @@ class PlayerBase extends Sprite{
     highLightPlayer(){
 
     }
-    generatemovementArea(movement){
+    generatemovementArea(gridPos=this.gridPos,movement=this.movementDistance){
         let movementArea = new Array();
         if(this.movementArea)
         for (const x of this.movementArea)
@@ -695,8 +730,8 @@ class PlayerBase extends Sprite{
             c.spread[this.id]=0;
             c.deSelectTile();
         }
-        let Area=getTile(this.gridPos.x,this.gridPos.y,this.gridPos.z-1).spreadSelect(movement,this.id);
-        
+        let t = getTile(gridPos.x,gridPos.y,gridPos.z-1);
+        let Area=t.spreadSelect(movement,this.id);
         this.selectebleTiles=Area;
         GameCamera.selectebleTiles=Area;
         //console.log(Area);
@@ -793,7 +828,7 @@ class MovementPath{
             for (const key in adjacent) {
                 var neighbor = adjacent[key];
                 if(key.length>1&&(!adjacent[key[0]]||!adjacent[key[1]]))continue;
-                if(neighbor==null||neighbor.stackedUnder!=null)continue;
+                if(neighbor==null||getTile(neighbor.gridPos.x,neighbor.gridPos.y,neighbor.gridPos.z+1))continue;
                 if(!closedSet.includes(neighbor)){
                     var tempG = current.g+1;
 

@@ -50,7 +50,7 @@ try{
     //spawn het player object op een random tile
     for(var i=0;i<2;i++){
         spawnPlayer(getRandomTile());
-        spawnDummy(getRandomTile());
+        //spawnDummy(getRandomTile());
     }
 
     //initialiseert plan fase van het spel

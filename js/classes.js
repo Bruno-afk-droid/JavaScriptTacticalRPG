@@ -242,6 +242,11 @@ class Sprite {
         this.position.x+=dif.x/2;
         this.position.y+=dif.y/2;
     }
+    setPosition(pos){
+        this.position.x=pos.x;
+        this.position.y=pos.y;
+        this.position.z=pos.z;
+    }
     containsPosition(pos,x=0,y=0){
         return (pos!=null
         && this.position.x < pos.x+x
@@ -255,13 +260,6 @@ class Sprite {
         && this.position.x + this.width > target.position.x 
         && this.position.y-this.position.z < target.position.y+target.height-target.position.z
         && this.position.y-this.position.z+this.height > target.position.y-target.position.z)
-    }
-    removeTransparent(){
-        switch(this.image){
-            case Images['TileT']: this.setSprite(Images['Tile']);
-            case Images['WallLeftT']:this.setSprite(Images['WallLeft']);break;
-            case Images['WallRightT']:this.setSprite(Images['WallRight']);
-        }
     }
     update() {
         this.draw();
@@ -827,7 +825,8 @@ class CharacterBase extends Sprite{
             const e = route.path[i];
             if(!e.previous)continue;
             if(!e.after&&e.color=='Yellow'){
-
+                GameCamera.disabledTiles.push(e.previous.gridPos);
+                this.actionQueue.push(new ActionStatus(20,null,new Array(),new Array(),new Array(),null,120,10));
                 continue;
             }
             this.actionQueue.push({
@@ -859,6 +858,14 @@ class CharacterBase extends Sprite{
     }
     tick(){
         if(GamePhase=='action'&&this.actionQueue.length>0){
+            if(this.actionQueue[0].duration){
+                if(this.actionQueue[0].tick()){
+                    this.actionQueue[0].applyToCharacter(this);
+                }else{
+                    this.actionQueue.shift();
+                }
+                return;
+            }
             let mp=structuredClone(this.actionQueue[0]); 
             let mv=this.actionQueue[0];
             let M = Math.sign(mv.x)!=Math.sign(mv.y) ? 1/60*this.movementSpeed: 1/60*this.movementSpeed/2;
@@ -898,6 +905,9 @@ class CharacterBase extends Sprite{
                if(this.selectedAction=='action'&&--CharactersInAction<=0)setUpPlanPhase();
             this.selectedAction='positioning';
         }
+    }
+    dealDamageTo(character,damage){
+        console.log(this+"dealt "+damage+" damage to: "+character);
     }
     updateCharacterPosition(){
         this.movementArea=this.generateMovementArea();
@@ -1022,7 +1032,6 @@ class MovementPath{
         this.start=start;
         this.end=end;
         this.generatePath();
-        this.current=this.path[this.path.length-1];
         this.hidden=false;
         this.depth=1;
         this.details.push(new Sprite({x:0,y:0,z:0},'AMPSP',48*2,25*2));
@@ -1037,15 +1046,11 @@ class MovementPath{
         this.generatePath();
         this.current=this.path[this.path.length-1];
     }
-    getNextPathSegment(){
-        if(this.current)this.current=this.current.after;
-        return this.current;
-    }
-    resetmovementArea(){
+    resetMovementArea(){
         loopTileGrid(this.movementArea,'spreadSelect');
     }
     generatePath(start,end,Area=this.movementArea){
-        this.resetmovementArea();
+        this.resetMovementArea();
         var openSet = [];
         var closedSet = [];
         if(start)this.start=getTile(start.x,start.y,start.z,Area);
@@ -1239,4 +1244,56 @@ class PathSegment extends Sprite{
     draw(pos={x:0,y:0,z:1}){
         super.draw(pos);
     }
+}
+//ActionStatus is een object wat wordt gebruikt om acties uit te voeren voor een CharacterBase
+class ActionStatus{
+    constructor(duration,spriteAnimation,movementQueue,animationAtributes,animationAtributesEnd,target,damage,damageTiming){
+        this.duration=duration;
+        this.spriteAnimation=spriteAnimation;
+        this.movementQueue=movementQueue;
+        this.animationAtributes=animationAtributes;
+        this.animationAtributesEnd=animationAtributesEnd;
+        this.damage=damage;
+        this.damageTiming=damageTiming;
+        this.target=target;
+        this.queueTimer=duration;
+    }
+    tick(){
+        if(this.queueTimer>0)this.queueTimer--;else return false;
+        if(this.movementQueue.length>0){
+            let mv=this.movementQueue[i];
+            let M = Math.sign(mv.x)!=Math.sign(mv.y) ? 1/60*character.movementSpeed: 1/60*character.movementSpeed/2;
+            if(numPos(mv.x.toFixed(2))>M)mv.x-=M*Math.sign(mv.x);else mv.x=0;
+            if(numPos(mv.y.toFixed(2))>M)mv.y-=M*Math.sign(mv.y);else mv.y=0;
+            if(numPos(mv.z.toFixed(2))>M)mv.z-=M*Math.sign(mv.z);else mv.z=0;
+        }
+        return true;
+    }
+    applyToCharacter(character){
+        if(!character)return;
+        let i=this.duration-this.queueTimer;
+
+        if(this.movementQueue.length>0){
+            let mp=structuredClone(this.movementQueue[0]); 
+            let mv=this.movementQueue[0];
+            let M = Math.sign(mv.x)!=Math.sign(mv.y) ? 1/60*character.movementSpeed: 1/60*character.movementSpeed/2;
+            
+            if(numPos(mv.x)<=0&&numPos(mv.y)<=0&&numPos(mv.z)<=0){                
+                character.moveWithGridPos(mp);
+                this.movementQueue.shift();
+                if(this.movementQueue.length==0){
+                    movePlayerOnGrid(character,character.gridPos);
+                }
+            }
+            character.movePosition(GridTile.getTileCoordinates(
+                M*Math.sign(mv.x),
+                M*Math.sign(mv.y),
+                M*Math.sign(mv.z)
+            ));
+        }
+        if(i==this.damageTiming){
+            character.dealDamageTo(this.target,this.damage);
+        }
+    }
+    
 }

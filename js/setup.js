@@ -37,10 +37,18 @@ function pickedFromObjects(arr,...dir){
     }
     return result;
 }
+function getKeyByValue(object, value) {
+    return Object.keys(object).find(key => object[key] === value);
+}  
 function gup (name) {
     name = RegExp ('[?&]' + name.replace (/([[\]])/, '\\$1') + '=([^&#]*)');
     return (window.location.href.match (name) || ['', ''])[1];
   }
+function inArray(arr,elt){
+    for (const item of arr) {
+        if(samePosition(item,elt))return true;
+    }return false;
+}
 function samePosition(p1,p2){
     return(p1?.x==p2?.x&&
         p1?.y==p2?.y&&
@@ -80,9 +88,18 @@ function remove(el){
 function setAll(arr,key,value){
     for (const item of arr) item[key]=value;
 }
-function isAnyEqual(arr,key,value){
-    for (const item of arr) if(item[key]) return true;
-    return false;
+function triggerAll(arr,func,... par){
+    for (const item of arr) item[func](par);
+}
+function getAllEquals(arr,value,... keys){
+    let result = new Array();
+    for (const item of arr) {
+        let object = item;
+        for (const a of keys){if(!object)continue;object=object[a];}
+        if(!object)continue;
+        if(object==value)result.push(item);
+    }
+    return result;
 }
 //functie om images toe te voegen aan Images dictionary
 function addImage(key,img){
@@ -99,6 +116,8 @@ addImage('SelectedTile','./img/Selected/SelectedTile.png');
 addImage('MovementTile','./img/Selected/MovementTile.png');
 addImage('MovementAction','./img/Selected/MovementAction.png');
 addImage('SelectedMovementAction','./img/Selected/SelectedMovementAction.png');
+addImage('TargetAction','./img/Selected/TargetAction.png');   
+addImage('SelectedTargetAction','./img/Selected/SelectedTargetAction.png');
 
 //UI
 addImage('Button','./img/UI/Button.png');
@@ -149,6 +168,48 @@ addImage('MPDELU','./img/Path/MPDELU.png');
 addImage('MPVEU','./img/Path/MPVEU.png');
 addImage('MPDERU','./img/Path/MPDERU.png');
 addImage('MPHER','./img/Path/MPHER.png');
+
+//Attack movement parts
+addImage('AMPSP','./img/Path/MP_melee/AMPSP.png');
+addImage('AMPSPLU','./img/Path/MP_melee/AMPSPLU.png');
+addImage('AMPSPU','./img/Path/MP_melee/AMPSPU.png');
+addImage('AMPSPRU','./img/Path/MP_melee/AMPSPRU.png');
+addImage('AMPSPR','./img/Path/MP_melee/AMPSPR.png');
+addImage('AMPSPRD','./img/Path/MP_melee/AMPSPRD.png');
+addImage('AMPSPD','./img/Path/MP_melee/AMPSPD.png');
+addImage('AMPSPLD','./img/Path/MP_melee/AMPSPLD.png');
+addImage('AMPSPL','./img/Path/MP_melee/AMPSPL.png');
+
+addImage('AMPBL','./img/Path/MP_melee/AMPBL.png');
+addImage('AMPBR','./img/Path/MP_melee/AMPBR.png');
+addImage('AMPBU','./img/Path/MP_melee/AMPBU.png');
+addImage('AMPBD','./img/Path/MP_melee/AMPBD.png');
+addImage('AMPDL','./img/Path/MP_melee/AMPDL.png');
+addImage('AMPDR','./img/Path/MP_melee/AMPDR.png');
+
+addImage('AMPH','./img/Path/MP_melee/AMPH.png');
+addImage('AMPHBLD','./img/Path/MP_melee/AMPHBLD.png');
+addImage('AMPHBRD','./img/Path/MP_melee/AMPHBRD.png');
+addImage('AMPHBLU','./img/Path/MP_melee/AMPHBLU.png');
+addImage('AMPHBRU','./img/Path/MP_melee/AMPHBRU.png');
+addImage('AMPV','./img/Path/MP_melee/AMPV.png');
+addImage('AMPVBLD','./img/Path/MP_melee/AMPVBLD.png');
+addImage('AMPVBRD','./img/Path/MP_melee/AMPVBRD.png');
+addImage('AMPVBLU','./img/Path/MP_melee/AMPVBLU.png');
+addImage('AMPVBRU','./img/Path/MP_melee/AMPVBRU.png');
+
+addImage('AMPDERD','./img/Path/MP_melee/AMPDERD.png');
+addImage('AMPVED','./img/Path/MP_melee/AMPVED.png');
+addImage('AMPDELD','./img/Path/MP_melee/AMPDELD.png');
+addImage('AMPHEL','./img/Path/MP_melee/AMPHEL.png');
+addImage('AMPDELU','./img/Path/MP_melee/AMPDELU.png');
+addImage('AMPVEU','./img/Path/MP_melee/AMPVEU.png');
+addImage('AMPDERU','./img/Path/MP_melee/AMPDERU.png');
+addImage('AMPHER','./img/Path/MP_melee/AMPHER.png');
+
+//Attack movement part target 
+addImage('SetTarged','./img/Path/SetTarget.png');
+addImage('SelectTarged','./img/Path/SelectedTarget.png');
 
 //gebruik dictionary om de image van het PathSegment Object te berekenen
 let PathRails = {

@@ -48,9 +48,10 @@ try{
     TerrainStart={x:-((TileWidth*st.x)+(TileWidth*st.y))/2,y:-(-(TileHeight*st.x)+(TileHeight*st.y))/2,z:0};
 
     //spawn het player object op een random tile
-    for(var i=0;i<2;i++)
-    spawnPlayer(getRandomTile());
-    spawnDummy(getRandomTile());
+    for(var i=0;i<2;i++){
+        spawnPlayer(getRandomTile());
+        spawnDummy(getRandomTile());
+    }
 
     //initialiseert plan fase van het spel
     setUpPlanPhase();
@@ -253,14 +254,16 @@ function spawnPlayer(Tile){
     Characters.push(player);
     ControlebleCharacters.push(player);
     //GameCamera.selectedItem.setPosition(structuredClone(Tile.gridPos));
-    Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
+    //Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
+    movePlayerOnGrid(player,player.gridPos);
 }
 function spawnDummy(Tile){
     while(Tile.stackedUnder!=null)Tile=Tile.stackedUnder;
     player = new DummyBase({x:Tile.gridPos.x,y:Tile.gridPos.y,z:Tile.gridPos.z+1});
     Characters.push(player);
     //GameCamera.selectedItem.setPosition(structuredClone(Tile.gridPos));
-    Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
+    //Terrain[Tile.gridPos.x][Tile.gridPos.y][Tile.gridPos.z+1]=player;
+    movePlayerOnGrid(player,player.gridPos);
 }
 function tick(){
     if(!Paused){
